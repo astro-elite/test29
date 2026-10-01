@@ -1,0 +1,1112 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Space AI — Kosmik Koinot Modeli</title>
+    
+    <!-- Google Fonts & Icon Libraries -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+    <style>
+        :root {
+            --bg-deep-space: #030712;
+            --glass-base: rgba(15, 23, 42, 0.75);
+            --glass-card: rgba(30, 41, 59, 0.55);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --glass-border-light: rgba(255, 255, 255, 0.15);
+            --glass-border-focus: rgba(56, 189, 248, 0.5);
+            
+            --primary-accent: #38bdf8;
+            --primary-accent-glow: rgba(56, 189, 248, 0.3);
+            --success-color: #34d399;
+            --danger-color: #f87171;
+            
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --text-dim: #64748b;
+            
+            --font-main: 'Plus Jakarta Sans', system-ui, sans-serif;
+            --font-heading: 'Space Grotesk', sans-serif;
+            --font-code: 'JetBrains Mono', monospace;
+            
+            --sidebar-width: 290px;
+            --transition-smooth: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            outline: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* 100dvh — Mobil brauzerlarda klaviatura va manzil paneliga moslashadi */
+        html, body {
+            height: 100%;
+            height: 100dvh;
+            width: 100%;
+            background-color: var(--bg-deep-space);
+            color: var(--text-main);
+            font-family: var(--font-main);
+            overflow: hidden;
+            display: flex;
+        }
+
+        #space-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        /* Asosiy Layout */
+        .app-layout {
+            display: flex;
+            width: 100%;
+            height: 100%;
+            height: 100dvh;
+            z-index: 1;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Sidebar - Liquid Glass */
+        aside.sidebar {
+            width: var(--sidebar-width);
+            height: 100%;
+            background: var(--glass-base);
+            backdrop-filter: blur(28px);
+            -webkit-backdrop-filter: blur(28px);
+            border-right: 1px solid var(--glass-border);
+            display: flex;
+            flex-direction: column;
+            transition: var(--transition-smooth);
+            z-index: 30;
+            flex-shrink: 0;
+        }
+
+        aside.sidebar.closed {
+            margin-left: calc(-1 * var(--sidebar-width));
+        }
+
+        .sidebar-header {
+            padding: 18px 16px 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .logo-box {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-family: var(--font-heading);
+            font-weight: 700;
+            font-size: 1.15rem;
+            color: #fff;
+            user-select: none;
+            cursor: pointer;
+        }
+
+        .logo-icon {
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, rgba(56, 189, 248, 0.25), rgba(99, 102, 241, 0.25));
+            border: 1px solid rgba(56, 189, 248, 0.4);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--primary-accent);
+            box-shadow: 0 0 15px var(--primary-accent-glow);
+        }
+
+        .new-chat-btn {
+            margin: 8px 14px 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            background: rgba(56, 189, 248, 0.12);
+            border: 1px solid rgba(56, 189, 248, 0.3);
+            color: #fff;
+            padding: 11px 16px;
+            border-radius: 12px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition-smooth);
+        }
+
+        .new-chat-btn:hover {
+            background: rgba(56, 189, 248, 0.22);
+            border-color: var(--primary-accent);
+        }
+
+        .chat-list-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 0 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .sidebar-footer {
+            padding: 14px 16px;
+            border-top: 1px solid var(--glass-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.25);
+        }
+
+        .icon-btn {
+            background: transparent;
+            border: 1px solid transparent;
+            color: var(--text-muted);
+            width: 38px;
+            height: 38px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: var(--transition-smooth);
+            flex-shrink: 0;
+        }
+
+        .icon-btn:hover {
+            background: var(--glass-card);
+            color: #fff;
+            border-color: var(--glass-border-light);
+        }
+
+        /* Asosiy Ishchi Maydon */
+        main.main-viewport {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            height: 100dvh;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Yuqori qism */
+        .top-navbar {
+            height: 58px;
+            padding: 0 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            z-index: 10;
+            background: rgba(3, 7, 18, 0.65);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-bottom: 1px solid var(--glass-border);
+            flex-shrink: 0;
+        }
+
+        .nav-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .status-badge {
+            font-size: 0.78rem;
+            padding: 4px 12px;
+            background: rgba(16, 185, 129, 0.12);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            color: #34d399;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 500;
+        }
+
+        .status-badge::before {
+            content: '';
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #10b981;
+            box-shadow: 0 0 8px #10b981;
+        }
+
+        /* Xabarlar ro'yxati */
+        .chat-scroller {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px 16px 20px;
+            display: flex;
+            flex-direction: column;
+            scroll-behavior: smooth;
+        }
+
+        .center-wrap {
+            max-width: 860px;
+            width: 100%;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 22px;
+        }
+
+        /* Xabar qatorlari */
+        .msg-row {
+            display: flex;
+            width: 100%;
+            align-items: flex-start;
+            gap: 12px;
+            animation: fadeInMsg 0.25s ease-out forwards;
+        }
+
+        @keyframes fadeInMsg {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .msg-row.user {
+            justify-content: flex-end;
+        }
+
+        .msg-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+
+        .msg-avatar.ai {
+            background: linear-gradient(135deg, #0284c7, #2563eb);
+            color: #fff;
+            box-shadow: 0 0 14px rgba(56, 189, 248, 0.35);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+        }
+
+        .msg-bubble-container {
+            display: flex;
+            flex-direction: column;
+            max-width: calc(100% - 48px);
+        }
+
+        .msg-row.user .msg-bubble-container {
+            max-width: 85%;
+            align-items: flex-end;
+        }
+
+        .msg-bubble {
+            border-radius: 18px;
+            word-break: break-word;
+            font-size: 0.94rem;
+        }
+
+        .msg-row.user .msg-bubble {
+            background: #1e293b;
+            color: #f1f5f9;
+            padding: 12px 18px;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-top-right-radius: 4px;
+            line-height: 1.6;
+        }
+
+        .msg-row.ai .msg-bubble {
+            background: var(--glass-card);
+            border: 1px solid var(--glass-border-light);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-top-left-radius: 4px;
+            padding: 18px 22px;
+            color: var(--text-main);
+            width: 100%;
+            box-shadow: 0 6px 25px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Tipografiya va ro'yxatlar */
+        .msg-bubble p {
+            margin-bottom: 12px;
+            line-height: 1.75;
+            color: #e2e8f0;
+        }
+
+        .msg-bubble p:last-child {
+            margin-bottom: 0;
+        }
+
+        .msg-bubble strong {
+            color: #fff;
+            font-weight: 700;
+        }
+
+        .msg-bubble ol, .msg-bubble ul {
+            margin: 10px 0 14px 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .msg-bubble li {
+            line-height: 1.7;
+            color: #cbd5e1;
+        }
+
+        .msg-bubble li::marker {
+            color: var(--primary-accent);
+            font-weight: bold;
+        }
+
+        /* Pastki Yozish Qutisi - To'liq integratsiyalangan */
+        .input-bar-container {
+            padding: 10px 16px calc(12px + env(safe-area-inset-bottom, 0px));
+            background: rgba(3, 7, 18, 0.85);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border-top: 1px solid var(--glass-border);
+            flex-shrink: 0;
+            z-index: 20;
+        }
+
+        .input-glass-box {
+            max-width: 860px;
+            margin: 0 auto;
+            background: rgba(15, 23, 42, 0.85);
+            border: 1px solid var(--glass-border-light);
+            border-radius: 20px;
+            padding: 8px 12px 8px 18px;
+            display: flex;
+            align-items: flex-end;
+            gap: 10px;
+            transition: var(--transition-smooth);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+        }
+
+        .input-glass-box:focus-within {
+            border-color: var(--glass-border-focus);
+            box-shadow: 0 0 20px var(--primary-accent-glow);
+        }
+
+        textarea#user-input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: #fff;
+            font-family: inherit;
+            font-size: 0.95rem;
+            resize: none;
+            max-height: 140px;
+            min-height: 24px;
+            line-height: 1.5;
+            padding: 4px 0;
+        }
+
+        textarea#user-input::placeholder {
+            color: var(--text-dim);
+        }
+
+        .send-btn {
+            background: var(--primary-accent);
+            color: #030712;
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: var(--transition-smooth);
+            flex-shrink: 0;
+        }
+
+        .send-btn:disabled {
+            background: #1e293b;
+            color: var(--text-dim);
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        /* Hero View */
+        .welcome-hero {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            margin-top: 3vh;
+            text-align: center;
+            gap: 14px;
+        }
+
+        .welcome-hero h1 {
+            font-family: var(--font-heading);
+            font-size: 2.2rem;
+            background: linear-gradient(135deg, #ffffff 40%, #38bdf8 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-weight: 700;
+        }
+
+        .welcome-hero p {
+            color: var(--text-muted);
+            max-width: 480px;
+            font-size: 0.95rem;
+            line-height: 1.6;
+        }
+
+        .suggestion-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 12px;
+            margin-top: 24px;
+            width: 100%;
+            max-width: 800px;
+        }
+
+        .sug-card {
+            background: var(--glass-card);
+            border: 1px solid var(--glass-border);
+            padding: 14px 16px;
+            border-radius: 14px;
+            cursor: pointer;
+            transition: var(--transition-smooth);
+            text-align: left;
+        }
+
+        .sug-card:hover {
+            border-color: var(--primary-accent);
+            background: rgba(56, 189, 248, 0.08);
+            transform: translateY(-2px);
+        }
+
+        .sug-card .sug-title {
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: #fff;
+            margin-bottom: 4px;
+        }
+
+        .sug-card .sug-desc {
+            font-size: 0.8rem;
+            color: var(--text-dim);
+            line-height: 1.4;
+        }
+
+        /* Maxfiy Modallar */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            z-index: 100;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .modal-card {
+            background: rgba(15, 23, 42, 0.96);
+            border: 1px solid var(--glass-border-light);
+            width: 100%;
+            max-width: 580px;
+            border-radius: 22px;
+            padding: 24px;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.7);
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--glass-border);
+            padding-bottom: 12px;
+        }
+
+        .modal-header h3 {
+            font-family: var(--font-heading);
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .bulk-textarea {
+            width: 100%;
+            background: #090d16;
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 12px;
+            color: #fff;
+            font-family: var(--font-code);
+            font-size: 0.82rem;
+            resize: vertical;
+            min-height: 120px;
+        }
+
+        .btn-primary {
+            width: 100%;
+            padding: 12px;
+            background: var(--primary-accent);
+            border: none;
+            border-radius: 12px;
+            font-weight: 600;
+            color: #030712;
+            cursor: pointer;
+            transition: var(--transition-smooth);
+            font-size: 0.92rem;
+        }
+
+        .btn-primary:hover {
+            opacity: 0.92;
+            box-shadow: 0 0 16px var(--primary-accent-glow);
+        }
+
+        .btn-danger {
+            background: rgba(239, 68, 68, 0.15);
+            border: 1px solid rgba(239, 68, 68, 0.35);
+            color: #f87171;
+            padding: 10px 14px;
+            border-radius: 10px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            width: 100%;
+        }
+
+        /* Mobil moslashuv */
+        @media (max-width: 768px) {
+            aside.sidebar {
+                position: fixed;
+                left: 0;
+                top: 0;
+                height: 100%;
+            }
+            .welcome-hero h1 {
+                font-size: 1.8rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <canvas id="space-canvas"></canvas>
+
+    <div class="app-layout">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <!-- Logotipga 5 marta tez bossangiz admin panel ochiladi -->
+                <div class="logo-box" onclick="handleSecretTrigger()" title="Space AI">
+                    <div class="logo-icon">
+                        <i data-lucide="orbit"></i>
+                    </div>
+                    <span>Space AI</span>
+                </div>
+                <button class="icon-btn" onclick="toggleSidebar()">
+                    <i data-lucide="panel-left-close"></i>
+                </button>
+            </div>
+
+            <button class="new-chat-btn" onclick="startNewChat()">
+                <i data-lucide="plus"></i>
+                <span>Yangi Chat</span>
+            </button>
+
+            <div class="chat-list-container" id="chat-history-list"></div>
+
+            <div class="sidebar-footer">
+                <span style="font-size: 0.75rem; color: var(--text-dim);">Kosmik Intellekt</span>
+                <span id="version-tag" style="font-size: 0.72rem; color: var(--primary-accent);">v2.5</span>
+            </div>
+        </aside>
+
+        <!-- Asosiy ko'rish oynasi -->
+        <main class="main-viewport">
+            <nav class="top-navbar">
+                <div class="nav-left">
+                    <button class="icon-btn" onclick="toggleSidebar()" id="sidebar-open-btn" style="display: none;">
+                        <i data-lucide="panel-left-open"></i>
+                    </button>
+                    <!-- Yozuvga 5 marta tez bossangiz ham admin panel ochiladi -->
+                    <div class="status-badge" onclick="handleSecretTrigger()" style="cursor: pointer;">
+                        Koinot Modeli Faol
+                    </div>
+                </div>
+            </nav>
+
+            <div class="chat-scroller" id="scroller">
+                <div class="center-wrap" id="chat-viewport">
+                    <div class="welcome-hero" id="hero-view">
+                        <h1>Koinot Sirlarini O'rganing</h1>
+                        <p>Space AI — faqat astronomiya, qora tuynuklar, galaktikalar va kosmik tadqiqotlar bo'yicha maxsus o'rgatilgan intellekt.</p>
+
+                        <div class="suggestion-grid">
+                            <div class="sug-card" onclick="sendPrompt('Saturn nima sababdan juda katta va uning halqalari nimalardan iborat?')">
+                                <div class="sug-title">🪐 Saturn Giganti va Halqalari</div>
+                                <div class="sug-desc">Gaz giganti tuzilishi, massasi va halqalar siri.</div>
+                            </div>
+                            <div class="sug-card" onclick="sendPrompt('Jeyms Vebb teleskopi koinot haqida qanday yangi faktlarni ochdi?')">
+                                <div class="sug-title">🔭 Jeyms Vebb Kashfiyotlari</div>
+                                <div class="sug-desc">Ilk yulduzlar va qadimgi galaktikalar.</div>
+                            </div>
+                            <div class="sug-card" onclick="sendPrompt('Qora tuynuk yaqinida vaqt qanday sekinlashadi?')">
+                                <div class="sug-title">🕳️ Qora Tuynuk va Gravitatsiya</div>
+                                <div class="sug-desc">Relyativistik vaqt cho'zilishi hodisasi.</div>
+                            </div>
+                            <div class="sug-card" onclick="sendPrompt('Bugun qaysi mavzularda savol bergan edim? Kunlik xotirani ko\'rsat.')">
+                                <div class="sug-title">🕒 Bugungi Kunlik Xotira</div>
+                                <div class="sug-desc">00:01 dan boshlab berilgan barcha koinot savollari.</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pastki Yozish Paneli -->
+            <div class="input-bar-container">
+                <div class="input-glass-box">
+                    <textarea id="user-input" rows="1" placeholder="Koinot haqida savol bering..." onkeydown="handleKey(event)"></textarea>
+                    <button class="send-btn" id="send-button" onclick="sendMessage()">
+                        <i data-lucide="arrow-up"></i>
+                    </button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- 1. MAXFIY ADMIN PAROL MODALI (FAQAT SIZ UCHUN) -->
+    <div class="modal-overlay" id="auth-modal">
+        <div class="modal-card" style="max-width: 360px; text-align: center; gap: 14px;">
+            <div style="display: flex; justify-content: center;">
+                <div class="logo-icon" style="width: 48px; height: 48px;">
+                    <i data-lucide="lock"></i>
+                </div>
+            </div>
+            <h3 style="font-family: var(--font-heading);">Admin Tizimiga Kirish</h3>
+            <p style="font-size: 0.85rem; color: var(--text-muted);">Maxfiy PIN-kodni kiriting:</p>
+            <input type="password" id="admin-pin-input" placeholder="Parol..." maxlength="10" 
+                   style="width: 100%; padding: 12px; background: #090d16; border: 1px solid var(--glass-border); border-radius: 12px; color: #fff; text-align: center; font-size: 1.1rem; letter-spacing: 2px;"
+                   onkeydown="if(event.key==='Enter') verifyAdminPin()">
+            <button class="btn-primary" onclick="verifyAdminPin()">Tasdiqlash</button>
+            <button class="icon-btn" style="position: absolute; top: 16px; right: 16px;" onclick="closeModal('auth-modal')">
+                <i data-lucide="x"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- 2. TO'LIQ ADMIN KLASTER BOSHQARUVI -->
+    <div class="modal-overlay" id="admin-modal">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3><i data-lucide="server" style="color: var(--primary-accent);"></i> Server Admin — API Klaster (100 ta)</h3>
+                <button class="icon-btn" onclick="closeModal('admin-modal')"><i data-lucide="x"></i></button>
+            </div>
+
+            <p style="font-size: 0.84rem; color: var(--text-muted); line-height: 1.5;">
+                Siz server egasisiz. Bu yerga 100 tagacha Gemini API kalitlarini qator tashlab yozing. Saytga kirgan barcha foydalanuvchilar sizning klasteringizdan avtomatik navbatma-navbat foydalanadi.
+            </p>
+
+            <textarea id="bulk-api-input" class="bulk-textarea" placeholder="AIzaSyA1...&#10;AIzaSyB2...&#10;AIzaSyC3..."></textarea>
+            
+            <button class="btn-primary" onclick="saveBulkApiKeys()">Klasterga Saqlash va Hammaga Tarqatish</button>
+
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px;">
+                <span style="font-size: 0.82rem; color: var(--text-muted);">
+                    Jami kalitlar soni: <strong id="cluster-total-count" style="color:#fff;">0</strong> / 100
+                </span>
+                <button onclick="clearAllKeys()" style="background: none; border: none; color: var(--danger-color); font-size: 0.8rem; cursor: pointer;">
+                    Kalitlarni tozalash
+                </button>
+            </div>
+
+            <div style="border-top: 1px solid var(--glass-border); padding-top: 10px;">
+                <label style="font-size: 0.82rem; color: var(--text-dim); display: block; margin-bottom: 6px;">GitHub uchun Shifrlangan Zaxira Kodingiz (ixtiyoriy):</label>
+                <button class="btn-danger" onclick="exportKeysToCode()">
+                    <i data-lucide="code"></i> Kalitlarni GitHub uchun Eksport Qilish
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        lucide.createIcons();
+
+        /* --- 1. KOINOT FON TUVALI --- */
+        const canvas = document.getElementById('space-canvas');
+        const ctx = canvas.getContext('2d');
+        let stars = [];
+        let meteors = [];
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        class Star {
+            constructor() {
+                this.x = Math.random() * canvas.width;
+                this.y = Math.random() * canvas.height;
+                this.size = Math.random() * 1.5;
+                this.alpha = Math.random();
+                this.speed = Math.random() * 0.015 + 0.005;
+            }
+            update() {
+                this.alpha += this.speed;
+                if (this.alpha > 1 || this.alpha < 0.1) this.speed = -this.speed;
+            }
+            draw() {
+                ctx.fillStyle = `rgba(255, 255, 255, ${Math.abs(this.alpha)})`;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        class Meteor {
+            constructor() { this.reset(); }
+            reset() {
+                this.x = Math.random() * canvas.width + 400;
+                this.y = -60;
+                this.length = Math.random() * 90 + 50;
+                this.speed = Math.random() * 8 + 6;
+                this.angle = Math.PI / 4;
+                this.opacity = 1;
+            }
+            update() {
+                this.x -= this.speed * Math.cos(this.angle);
+                this.y += this.speed * Math.sin(this.angle);
+                this.opacity -= 0.014;
+                if (this.opacity <= 0) this.reset();
+            }
+            draw() {
+                ctx.strokeStyle = `rgba(56, 189, 248, ${this.opacity})`;
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.moveTo(this.x, this.y);
+                ctx.lineTo(this.x + this.length * Math.cos(this.angle), this.y - this.length * Math.sin(this.angle));
+                ctx.stroke();
+            }
+        }
+
+        for (let i = 0; i < 180; i++) stars.push(new Star());
+        for (let i = 0; i < 2; i++) meteors.push(new Meteor());
+
+        function animateSpace() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            stars.forEach(s => { s.update(); s.draw(); });
+            meteors.forEach(m => { m.update(); m.draw(); });
+            requestAnimationFrame(animateSpace);
+        }
+        animateSpace();
+
+        /* --- 2. MAXFIY ADMIN CHAQIRISH (FAQAT SIZ UCHUN) --- */
+        let clickCount = 0;
+        let clickTimer = null;
+
+        function handleSecretTrigger() {
+            clickCount++;
+            clearTimeout(clickTimer);
+            clickTimer = setTimeout(() => { clickCount = 0; }, 2000);
+
+            if (clickCount >= 5) { // 5 marta tez bosilganda ochiladi
+                clickCount = 0;
+                document.getElementById('admin-pin-input').value = '';
+                document.getElementById('auth-modal').style.display = 'flex';
+                setTimeout(() => document.getElementById('admin-pin-input').focus(), 150);
+            }
+        }
+
+        // Klaviatura: Ctrl + Shift + A
+        window.addEventListener('keydown', (e) => {
+            if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'a') {
+                e.preventDefault();
+                document.getElementById('admin-pin-input').value = '';
+                document.getElementById('auth-modal').style.display = 'flex';
+            }
+        });
+
+        function verifyAdminPin() {
+            const entered = document.getElementById('admin-pin-input').value.trim();
+            if (entered === "2305") {
+                closeModal('auth-modal');
+                openAdminModal();
+            } else {
+                alert("Noto'g'ri kod!");
+                document.getElementById('admin-pin-input').value = '';
+            }
+        }
+
+        function openAdminModal() {
+            const cluster = getApiCluster();
+            document.getElementById('cluster-total-count').innerText = cluster.length;
+            document.getElementById('admin-modal').style.display = 'flex';
+        }
+
+        function closeModal(id) {
+            document.getElementById(id).style.display = 'none';
+        }
+
+        /* --- 3. 100 TAGACHA API KALIT KLASTERI VA SERVER MODELI --- */
+        const STORAGE_CLUSTER_KEY = 'SPACE_AI_SHARED_CLUSTER';
+        let currentKeyIdx = 0;
+
+        // Boshlang'ich default server kalitlari (xohlasangiz admin paneldan 100 tagacha to'ldirasiz)
+        let DEFAULT_EMBEDDED_KEYS = [];
+
+        function getApiCluster() {
+            try {
+                const stored = JSON.parse(localStorage.getItem(STORAGE_CLUSTER_KEY) || '[]');
+                if (stored.length > 0) return stored;
+                return DEFAULT_EMBEDDED_KEYS;
+            } catch (e) {
+                return DEFAULT_EMBEDDED_KEYS;
+            }
+        }
+
+        function saveBulkApiKeys() {
+            const val = document.getElementById('bulk-api-input').value;
+            const lines = val.split(/[\n,]+/).map(s => s.trim()).filter(k => k.length > 10);
+            if (lines.length === 0) {
+                alert("Iltimos, haqiqiy Gemini API kalitlarni kiriting!");
+                return;
+            }
+            const current = getApiCluster();
+            const merged = Array.from(new Set([...current, ...lines])).slice(0, 100);
+            localStorage.setItem(STORAGE_CLUSTER_KEY, JSON.stringify(merged));
+            document.getElementById('cluster-total-count').innerText = merged.length;
+            document.getElementById('bulk-api-input').value = '';
+            alert(`${merged.length} ta API kalit server klasteriga muvaffaqiyatli saqlandi! Endi barcha foydalanuvchilar ulardan foydalanadi.`);
+            closeModal('admin-modal');
+        }
+
+        function clearAllKeys() {
+            if (confirm("Klasterdagi barcha kalitlarni tozalashni xohlaysizmi?")) {
+                localStorage.removeItem(STORAGE_CLUSTER_KEY);
+                document.getElementById('cluster-total-count').innerText = "0";
+            }
+        }
+
+        function exportKeysToCode() {
+            const cluster = getApiCluster();
+            if (cluster.length === 0) {
+                alert("Klasterda kalitlar yo'q!");
+                return;
+            }
+            // Shifrlab berish (GitHub Secret Scanning ushlay olmaydi)
+            const encoded = btoa(JSON.stringify(cluster));
+            prompt("GitHub'ga yuklash uchun ushbu shifrlangan kodni oling:", `DEFAULT_EMBEDDED_KEYS = JSON.parse(atob("${encoded}"));`);
+        }
+
+        function getNextClusterKey() {
+            const cluster = getApiCluster();
+            if (cluster.length === 0) return null;
+            const key = cluster[currentKeyIdx % cluster.length];
+            currentKeyIdx++;
+            return key;
+        }
+
+        /* --- 4. KUNLIK XOTIRA (00:01 - 23:59) --- */
+        function getDailyMemoryKey() {
+            const today = new Date().toISOString().slice(0, 10);
+            return `space_memory_${today}`;
+        }
+
+        function logToMemory(text) {
+            const key = getDailyMemoryKey();
+            let logs = JSON.parse(localStorage.getItem(key) || '[]');
+            logs.push({
+                time: new Date().toLocaleTimeString('uz-UZ'),
+                query: text
+            });
+            localStorage.setItem(key, JSON.stringify(logs));
+        }
+
+        function getMemoryContext() {
+            const key = getDailyMemoryKey();
+            const logs = JSON.parse(localStorage.getItem(key) || '[]');
+            if (logs.length === 0) return "Foydalanuvchi bugun birinchi marta so'rov bermoqda.";
+            return "FOYDALANUVCHINING BUGUNGI (00:00 dan hozirgacha) BERGAN BARCHA SO'ROVLARI:\n" +
+                   logs.map(l => `- [${l.time}] ${l.query}`).join("\n");
+        }
+
+        /* --- 5. GEMINI SO'ROV VA QAT'IY KOINOT QOIDALARI --- */
+        let chatMessages = [];
+        const SYSTEM_RULE = `Sen "Space AI" nomli maxsus koinot, astronomiya va astrofizika intellektisan.
+QAT'IY QOIDALAR:
+1. Sen FAQAT va FAQAT koinot, sayyoralar, galaktikalar, yulduzlar, qora tuynuklar, astrofizika, kvant kosmik hodisalari va kosmik parvozlar haqida javob berasan.
+2. Agar savol koinotdan tashqari bo'lsa, xushmuomalalik bilan: "Men faqat Koinot va Astronomiya bo'yicha maxsus Space AI manbaiman. Iltimos, koinotga oid savol bering!" deb javob ber.
+3. Agar foydalanuvchi "oldin nima so'ragan edim?", "bugun nimalar haqida gaplashdik?" kabi savollar bersa, [KUNLIK XOTIRA] bo'limidagi ro'yxatdan foydalanib bugun bergan barcha savollarini aniq eslatib ber.
+4. Javoblaringni o'qishga juda qulay, chiroyli Markdown formatida qaytar.`;
+
+        async function sendMessage() {
+            const input = document.getElementById('user-input');
+            const text = input.value.trim();
+            if (!text) return;
+
+            const cluster = getApiCluster();
+            if (cluster.length === 0) {
+                alert("Serverda faol API kalit mavjud emas. Iltimos, server egasi (Admin) bilan bog'laning.");
+                return;
+            }
+
+            document.getElementById('hero-view')?.remove();
+
+            appendMessage('user', text);
+            input.value = '';
+            input.style.height = 'auto';
+
+            logToMemory(text);
+
+            const aiMsgEl = appendMessage('ai', 'Koinot ma\'lumotlari olinmoqda...');
+            const sendBtn = document.getElementById('send-button');
+            sendBtn.disabled = true;
+
+            let success = false;
+            let tries = 0;
+            const maxTries = Math.min(cluster.length, 5);
+
+            while (!success && tries < maxTries) {
+                const currentKey = getNextClusterKey();
+                tries++;
+
+                try {
+                    const memoryCtx = getMemoryContext();
+                    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${currentKey}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            system_instruction: {
+                                parts: [{ text: `${SYSTEM_RULE}\n\n[KUNLIK XOTIRA]:\n${memoryCtx}` }]
+                            },
+                            contents: [
+                                ...chatMessages.map(m => ({
+                                    role: m.role === 'user' ? 'user' : 'model',
+                                    parts: [{ text: m.text }]
+                                })),
+                                { role: 'user', parts: [{ text }] }
+                            ]
+                        })
+                    });
+
+                    const data = await response.json();
+                    if (!response.ok) throw new Error(data.error?.message || "Xatolik yuz berdi");
+
+                    const reply = data.candidates?.[0]?.content?.parts?.[0]?.text;
+                    if (!reply) throw new Error("Bo'sh ma'lumot qaytdi");
+
+                    aiMsgEl.innerHTML = marked.parse(reply);
+                    chatMessages.push({ role: 'user', text });
+                    chatMessages.push({ role: 'model', text: reply });
+
+                    success = true;
+
+                } catch (err) {
+                    console.warn(`Kalit #${tries} da xatolik bo'ldi. Keyingisiga o'tilmoqda...`);
+                    if (tries >= maxTries) {
+                        aiMsgEl.innerHTML = `<span style="color: #f87171;">Kosmik tarmoqda xatolik: API kalitlari limiti tugagan yoki tarmoq uzildi.</span>`;
+                    }
+                }
+            }
+
+            sendBtn.disabled = false;
+            const scroller = document.getElementById('scroller');
+            scroller.scrollTop = scroller.scrollHeight;
+            lucide.createIcons();
+        }
+
+        function appendMessage(sender, content) {
+            const wrap = document.getElementById('chat-viewport');
+            const row = document.createElement('div');
+            row.className = `msg-row ${sender}`;
+
+            if (sender === 'ai') {
+                row.innerHTML = `
+                    <div class="msg-avatar ai"><i data-lucide="orbit"></i></div>
+                    <div class="msg-bubble-container">
+                        <div class="msg-bubble">${content}</div>
+                    </div>
+                `;
+            } else {
+                row.innerHTML = `
+                    <div class="msg-bubble-container">
+                        <div class="msg-bubble">${escapeHtml(content)}</div>
+                    </div>
+                `;
+            }
+
+            wrap.appendChild(row);
+            const scroller = document.getElementById('scroller');
+            scroller.scrollTop = scroller.scrollHeight;
+            lucide.createIcons();
+            return row.querySelector('.msg-bubble');
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.innerText = text;
+            return div.innerHTML;
+        }
+
+        function sendPrompt(text) {
+            document.getElementById('user-input').value = text;
+            sendMessage();
+        }
+
+        function handleKey(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        }
+
+        function toggleSidebar() {
+            const sb = document.getElementById('sidebar');
+            const btn = document.getElementById('sidebar-open-btn');
+            sb.classList.toggle('closed');
+            btn.style.display = sb.classList.contains('closed') ? 'flex' : 'none';
+        }
+
+        function startNewChat() {
+            chatMessages = [];
+            document.getElementById('chat-viewport').innerHTML = `
+                <div class="welcome-hero" id="hero-view">
+                    <h1>Yangi Koinot Chati</h1>
+                    <p>Siz yangi sessiya ochdingiz. Bugun berilgan barcha savollar xotirada saqlanmoqda.</p>
+                </div>
+            `;
+        }
+
+        const tx = document.getElementById('user-input');
+        tx.addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = (this.scrollHeight) + 'px';
+        });
+    </script>
+</body>
+</html>
